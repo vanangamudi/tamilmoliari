@@ -1,0 +1,117 @@
+:PROPERTIES:
+:ID:       db5bdce1-6a91-42c4-b80e-a3095d2f719f
+:END:
+#+title: Flask App for Tokenization Tagging
+
+
+* MCQ modality based application for Tamil tokenization
+We have a corpus with large number of words.
+
+The fundamental need for Tamil NLP tasks is to words and sub-words or more precisely morphemes.
+
+The main and easy interface for a user is to select from a list of given options instead of typing Tamil text which many people will not enjoy.
+So for any task, the problem must be framed into a MCQ question answering session(select one of many) or reordering problem (rank the options based on user understanding with top being the most preferred and last being the least preferred). Lets illustrate this with a problem
+
+களிமண்ணடுப்பு =
+- [ ] களிமண் + ணடுப்பு
+- [ ] களிமண் + அடுப்பு
+- [ ] களி + மண்ணடுப்பு
+- [ ] களி + மண் + ணடுப்பு
+
+
+களிமண்ணடுப்பு =
+- [ ] களிமண் + ணடுப்பு
+- [ ] களிமண் + அடுப்பு
+- [X] களி + மண்ணடுப்பு
+- [ ] களி + மண் + ணடுப்பு
+
+It is easy for simple words like this, how do we determine where to split in the following words can be confusing
+போகமுடியாதவர்களுக்காவேயே = போக + முடி +  யா(ஆ) + த + வர்(அர்) + கள் + க்கு(கு) + ஆக + வே(ஏ) + யே (ஏ)
+- போக + முடியாதவர்களுக்காகவேயே
+- போகமுடியாத + வர்களுக்குகாகவேயே
+- போகமுடியாதவர்கள் + உக்குகாவேயே
+
+In cases like above there may be too many competing option that might confuse a naive Tamil speaker, hence reordering task might be easier on their cognitive load.
+
+Yes naive Tamil speaker who would not have competency in Tamil grammar. The reasons are two fold
+- Naive Tamil speaker are less expensive
+- Please remember that our intention is not to demean them, but to develop a tool that should evoke their natural capacity and thinking process for understanding the language without invoking conscious thinking brain, so the answers reflect the subconscious understanding without getting their expertise involved.
+- Once initial annotated data is gathered, we can employ speakers with good grasp on Tamil grammar to validate and enrich the dataset who are costly to come by.
+
+That is the overall idea. Gather annotations from non expert tamil speakers to capture their mental model of Tamil understanding and analyse them with the help of experts.
+
+* Designing problems and associated datasets for questions
+
+One very simple rudimentary may be even not that useful problem is to generate all possible ngrams in mei-uyir form of a long word and find all the proper words present in it. The user is supposed to select only words from the suggestions that are meaningfully part of the longer word form.
+
+#+begin_example
+போகமுடியாதவர்கள் = ப் ஓ க் அ ம் ட் இ ய் ஆ த் அ வ் அ ர் க் அ ள்
+#+end_example
+
+From these sequence of alphabets we can see the following sequences are usual Tamil words, but only some of them are part of the actual word in a meaningful manner.
+
+#+begin_example
+போ
+போக*
+போகம்
+முடி*
+முடியா*
+முடியாதவர்*
+முடியாதவர்கள்*
+யாதவர்
+யாதவர்கள்
+ஆதவர்
+தவர்
+அவர்
+அவர்கள்
+கள்*
+#+end_example
+
+The words that are marked with * are proper parts of the words and others are proper Tamil word but not meaningful part of this word in particular.
+
+Here we need a working definition of *proper* which can be words that are smaller words that belong to the corpus itself.
+
+** Problem 2 - Which split is correct?
+
+Show a long word and ask the user to select the correct segmentation of the word.
+
+Lets take our old example
+#+begin_example
+
+போகமுடியாதவர்களுக்காவேயே
+= போக + முடி +  யா(ஆ) + த + வர்(அர்) + கள் + க்கு(கு) + ஆக + வே(ஏ) + யே (ஏ)
+= போக + முடியாதவர்களுக்காகவேயே
+= போகமுடியாத + வர்களுக்குகாகவேயே
+= போகமுடியாதவர்கள் + உக்குகாவேயே
+.
+.
+.
+.
+#+end_example
+
+There can be too many options to show and since we do not know at this point how to rank them so that reasonable splits come up top and so we can just show handful of them is impossible at this point.
+
+Hence lets make the problem into simpler one, instead of split a long word into its elemental components, we frame the problem such a way that the suggestions are only two part splits. Break each word into two parts so that it does not loose its meaning. We can then take those parts and show it to the user to make another split and we can go on recursively. i.e. we can show =முடியாதவர்களுக்காகவேயே= with options
+
+#+begin_example
+முடியாதவர்களுக்காகவேயே
+= முடியாதவர்கள் + உக்காகவேயே
+= முடியாத + வர்களுக்காகவேயே
+= முடியாதவர்களுக்கு + ஆகவேயே
+#+end_example
+
+There can be multiple correct segmentation for a single word, my favorite example is
+
+#+begin_example
+பருகாததேன்
+= பருகாத + தேன்
+= பருகாதது + ஏன்
+#+end_example
+
+How do we handle this in LSTM or Transformer model when training and inference? How can we tackle having multiple tokenization for same word at single shot?
+How can we encode multiple tokenizations?
+- Have all possible tokenization with same position embedding?
+- Re-architect to choose one of many tokenizations as per the meaning of the sentence?
+- Replace Transformers with GNN that can naturally handle such cases?
+
+But that is a problem for another day.
